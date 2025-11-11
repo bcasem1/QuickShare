@@ -10,7 +10,7 @@
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -20,7 +20,7 @@
       justify-content: center;
       padding: 20px;
     }
-    
+
     .container {
       max-width: 600px;
       width: 100%;
@@ -29,23 +29,23 @@
       box-shadow: 0 10px 40px rgba(0,0,0,0.2);
       padding: 40px;
     }
-    
+
     h1 {
       color: #333;
       margin-bottom: 10px;
       font-size: 28px;
     }
-    
+
     .subtitle {
       color: #666;
       margin-bottom: 30px;
       font-size: 14px;
     }
-    
+
     .form-group {
       margin-bottom: 20px;
     }
-    
+
     label {
       display: block;
       color: #333;
@@ -53,7 +53,7 @@
       margin-bottom: 8px;
       font-size: 14px;
     }
-    
+
     textarea, input[type="file"] {
       width: 100%;
       padding: 12px;
@@ -63,17 +63,17 @@
       font-size: 14px;
       transition: border-color 0.3s;
     }
-    
+
     textarea {
       min-height: 100px;
       resize: vertical;
     }
-    
+
     textarea:focus, input[type="file"]:focus {
       outline: none;
       border-color: #667eea;
     }
-    
+
     button {
       width: 100%;
       padding: 12px;
@@ -86,16 +86,16 @@
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    
+
     button:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
     }
-    
+
     button:active {
       transform: translateY(0);
     }
-    
+
     .result {
       margin-top: 30px;
       padding: 20px;
@@ -104,17 +104,17 @@
       border-radius: 8px;
       display: none;
     }
-    
+
     .result.show {
       display: block;
     }
-    
+
     .result h3 {
       color: #667eea;
       margin-bottom: 10px;
       font-size: 16px;
     }
-    
+
     .result-url {
       background: white;
       padding: 12px;
@@ -125,155 +125,295 @@
       font-size: 12px;
       color: #333;
     }
-    
+
     .copy-btn {
       background: #667eea;
       padding: 8px 16px;
       font-size: 14px;
       margin-top: 10px;
     }
-    
+
     .timer {
       color: #764ba2;
       font-weight: 600;
       margin-top: 10px;
       font-size: 14px;
     }
-    
+
     .file-name {
       color: #666;
       font-size: 12px;
       margin-top: 5px;
     }
+
+    .shared-content {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff8dc;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .shared-content.show {
+      display: block;
+    }
+
+    .shared-text {
+      background: white;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      word-wrap: break-word;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .download-btn {
+      background: #28a745;
+      margin-top: 10px;
+    }
+
+    .download-btn:hover {
+      box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+    }
+
+    .error {
+      color: #dc3545;
+      background: #f8d7da;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🚀 QuickShare</h1>
+    <h1>QuickShare</h1>
     <p class="subtitle">Share files & text instantly - No login needed!</p>
-    
+
     <div id="uploadForm">
       <div class="form-group">
-        <label>📝 Text (Optional)</label>
+        <label>Text (Optional)</label>
         <textarea id="textInput" placeholder="Paste your text here..."></textarea>
       </div>
-      
+
       <div class="form-group">
-        <label>📁 File (Optional)</label>
+        <label>File (Optional)</label>
         <input type="file" id="fileInput">
-        <div class="file-name" id="fileName"></div>
+        <div id="fileName" class="file-name"></div>
       </div>
-      
-      <button onclick="shareContent()">🔗 Create Share Link</button>
+
+      <button onclick="shareContent()">Create Share Link</button>
     </div>
-    
-    <div class="result" id="result">
-      <h3>✅ Link Created!</h3>
-      <p style="color: #666; margin-bottom: 10px; font-size: 13px;">Your share link (expires in 30 minutes):</p>
+
+    <div id="result" class="result">
+      <h3>Link Created!</h3>
+      <p>Your share link (expires in 30 minutes):</p>
       <div class="result-url" id="shareUrl"></div>
-      <button class="copy-btn" onclick="copyToClipboard()">📋 Copy Link</button>
+      <button class="copy-btn" onclick="copyToClipboard()">Copy Link</button>
       <div class="timer" id="timer"></div>
     </div>
+
+    <div id="sharedContent" class="shared-content">
+      <h3>Shared Content</h3>
+      <div id="textContent"></div>
+      <button id="downloadBtn" class="download-btn" style="display:none;" onclick="downloadFile()">Download File</button>
+      <div class="timer" id="receiverTimer"></div>
+    </div>
+
+    <div id="error" class="error" style="display:none;"></div>
   </div>
-  
+
   <script>
-    const API_URL = 'https://api.github.com/gists';
+    const BACKEND_URL = 'https://quickshare-backend.onrender.com';
     let currentTimer;
-    
+    let currentShareData = null;
+
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      const shareId = params.get('share');
+      if (shareId) {
+        retrieveSharedContent(shareId);
+      }
+    });
+
     document.getElementById('fileInput').addEventListener('change', function(e) {
       const fileName = e.target.files[0]?.name || '';
-      document.getElementById('fileName').textContent = fileName ? `📄 ${fileName}` : '';
+      document.getElementById('fileName').textContent = fileName ? `File: ${fileName}` : '';
     });
-    
+
     async function shareContent() {
       const text = document.getElementById('textInput').value;
       const file = document.getElementById('fileInput').files[0];
-      
+
       if (!text && !file) {
-        alert('⚠️ Please add text or select a file!');
+        showError('Please add text or select a file!');
         return;
       }
-      
+
       try {
-        const timestamp = Date.now();
-        const shareId = Math.random().toString(36).substr(2, 9);
-        const shareData = {
-          text: text,
-          fileName: file?.name || null,
-          created: new Date().toISOString(),
-          expires: new Date(Date.now() + 30*60000).toISOString()
-        };
-        
-        const gistContent = JSON.stringify(shareData);
-        
-        const response = await fetch('https://api.github.com/gists', {
+        let fileData = '';
+        let fileName = '';
+
+        if (file) {
+          fileName = file.name;
+          const reader = new FileReader();
+          await new Promise((resolve, reject) => {
+            reader.onload = () => {
+              fileData = reader.result;
+              resolve();
+            };
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+          });
+          fileData = btoa(String.fromCharCode.apply(null, new Uint8Array(fileData)));
+        }
+
+        const response = await fetch(`${BACKEND_URL}/api/share`, {
           method: 'POST',
-          headers: {
-            'Accept': 'application/vnd.github+json',
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            files: {
-              [`quickshare-${shareId}.json`]: {
-                content: gistContent
-              }
-            },
-            public: true,
-            description: `QuickShare - Expires at ${shareData.expires}`
+            text: text,
+            fileName: fileName,
+            fileData: fileData
           })
         });
-        
+
         if (!response.ok) {
-          // Fallback: Use localStorage for local sharing
-          localStorage.setItem(`share_${shareId}`, gistContent);
-          const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareId}`;
-          showShareResult(shareUrl, shareData.expires);
-        } else {
-          const gist = await response.json();
-          const shareUrl = `${window.location.origin}${window.location.pathname}?gist=${gist.id}`;
-          showShareResult(shareUrl, shareData.expires);
+          throw new Error('Failed to create share');
         }
+
+        const data = await response.json();
+        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${data.shareId}`;
+        showShareResult(shareUrl, data.expiresAt);
       } catch (err) {
-        console.error('Error:', err);
-        alert('❌ Error creating share. Try again!');
+        showError('Error creating share. Try again!');
       }
     }
-    
+
+    async function retrieveSharedContent(shareId) {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/share/${shareId}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            showError('Share not found or expired');
+          } else {
+            showError('Error retrieving share');
+          }
+          return;
+        }
+
+        const data = await response.json();
+        currentShareData = data;
+
+        document.getElementById('uploadForm').style.display = 'none';
+        document.getElementById('result').style.display = 'none';
+
+        if (data.text) {
+          const textContent = document.getElementById('textContent');
+          textContent.innerHTML = `<div class="shared-text"><strong>Text:</strong><br>${data.text.replace(/\n/g, '<br>')}</div>`;
+        }
+
+        if (data.fileData && data.fileName) {
+          document.getElementById('downloadBtn').style.display = 'block';
+        }
+
+        document.getElementById('sharedContent').classList.add('show');
+        startReceiverTimer(new Date(data.expiresAt));
+      } catch (err) {
+        showError('Error retrieving shared content');
+      }
+    }
+
+    function downloadFile() {
+      if (!currentShareData || !currentShareData.fileData) return;
+
+      try {
+        const binaryString = atob(currentShareData.fileData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes]);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = currentShareData.fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (err) {
+        showError('Error downloading file');
+      }
+    }
+
     function showShareResult(url, expiresAt) {
       document.getElementById('shareUrl').textContent = url;
       document.getElementById('result').classList.add('show');
       document.getElementById('uploadForm').style.display = 'none';
-      
       startTimer(new Date(expiresAt));
     }
-    
+
     function startTimer(expiresDate) {
       if (currentTimer) clearInterval(currentTimer);
-      
+
       const updateTimer = () => {
         const now = new Date();
         const diff = Math.floor((expiresDate - now) / 1000);
-        
+
         if (diff <= 0) {
-          document.getElementById('timer').textContent = '⏱️ EXPIRED';
+          document.getElementById('timer').textContent = 'EXPIRED';
           clearInterval(currentTimer);
           return;
         }
-        
+
         const mins = Math.floor(diff / 60);
         const secs = diff % 60;
-        document.getElementById('timer').textContent = `⏱️ Expires in ${mins}:${secs.toString().padStart(2, '0')}`;
+        document.getElementById('timer').textContent = `Expires in ${mins}:${secs.toString().padStart(2, '0')}`;
       };
-      
+
       updateTimer();
       currentTimer = setInterval(updateTimer, 1000);
     }
-    
+
+    function startReceiverTimer(expiresDate) {
+      if (currentTimer) clearInterval(currentTimer);
+
+      const updateTimer = () => {
+        const now = new Date();
+        const diff = Math.floor((expiresDate - now) / 1000);
+
+        if (diff <= 0) {
+          document.getElementById('receiverTimer').textContent = 'EXPIRED';
+          clearInterval(currentTimer);
+          return;
+        }
+
+        const mins = Math.floor(diff / 60);
+        const secs = diff % 60;
+        document.getElementById('receiverTimer').textContent = `Expires in ${mins}:${secs.toString().padStart(2, '0')}`;
+      };
+
+      updateTimer();
+      currentTimer = setInterval(updateTimer, 1000);
+    }
+
     function copyToClipboard() {
       const url = document.getElementById('shareUrl').textContent;
       navigator.clipboard.writeText(url).then(() => {
-        alert('✅ Link copied to clipboard!');
+        alert('Link copied to clipboard!');
       });
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      setTimeout(() => {
+        errorDiv.style.display = 'none';
+      }, 5000);
     }
   </script>
 </body>
